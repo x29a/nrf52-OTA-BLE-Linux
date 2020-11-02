@@ -170,15 +170,15 @@ class BleDfuServer(QtCore.QObject):
     
     --------------------------------------------------------------------------
     """
-    def __init__(self, target_mac, hexfile_path, datfile_path, window):
+    def __init__(self, target_mac, hexfile_path, datfile_path):
 		debug_msg("Init")
 		self.target_mac = target_mac
 
 		self.hexfile_path = hexfile_path
 		self.datfile_path = datfile_path
 		self.delegate = MyDelegate(self)
-		self.instance = window
-		self.updated.connect(self.instance.updateProgressBar)
+#		self.instance = window
+#		self.updated.connect(self.instance.updateProgressBar)
 
     def setNotification(self, notify):
 	self.notification = notify
@@ -309,7 +309,7 @@ class BleDfuServer(QtCore.QObject):
             receipt = receipt + (byte3 << 8)
             receipt = receipt + (byte4 << 0)
 
-	    self.updated.emit(100)
+#	    self.updated.emit(100)
 #	    self.window.ui.progressBar.setProperty("value", 100)
 #	    method = getattr(self.window, 'updatePB') 
 #	    method(100)
