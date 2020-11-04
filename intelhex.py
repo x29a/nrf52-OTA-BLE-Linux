@@ -39,9 +39,7 @@
 @version    1.5
 '''
 
-
 __docformat__ = "javadoc"
-
 
 from array import array
 from binascii import hexlify, unhexlify
@@ -54,6 +52,7 @@ from compat import asbytes, asstr
 
 class _DeprecatedParam(object):
     pass
+
 
 _DEPRECATED = _DeprecatedParam()
 
@@ -79,7 +78,7 @@ class IntelHex(object):
         self._offset = 0
 
         if source is not None:
-            if isinstance(source, basestring) or getattr(source, "read", None):
+            if isinstance(source, str) or getattr(source, "read", None):
                 # load hex file
                 self.loadhex(source)
             elif isinstance(source, dict):
@@ -102,7 +101,7 @@ class IntelHex(object):
         '''
         s = s.rstrip('\r\n')
         if not s:
-            return          # empty line
+            return  # empty line
 
         if s[0] == ':':
             try:
@@ -120,7 +119,7 @@ class IntelHex(object):
         if length != (5 + record_length):
             raise RecordLengthError(line=line)
 
-        addr = bin[1]*256 + bin[2]
+        addr = bin[1] * 256 + bin[2]
 
         record_type = bin[3]
         if not (0 <= record_type <= 5):
@@ -134,13 +133,13 @@ class IntelHex(object):
         if record_type == 0:
             # data record
             addr += self._offset
-            for i in xrange(4, 4+record_length):
+            for i in range(4, 4 + record_length):
                 if not self._buf.get(addr, None) is None:
                     raise AddressOverlapError(address=addr, line=line)
                 self._buf[addr] = bin[i]
-                addr += 1   # FIXME: addr should be wrapped 
-                            # BUT after 02 record (at 64K boundary)
-                            # and after 04 record (at 4G boundary)
+                addr += 1  # FIXME: addr should be wrapped
+                # BUT after 02 record (at 64K boundary)
+                # and after 04 record (at 4G boundary)
 
         elif record_type == 1:
             # end of file record
@@ -152,13 +151,13 @@ class IntelHex(object):
             # Extended 8086 Segment Record
             if record_length != 2 or addr != 0:
                 raise ExtendedSegmentAddressRecordError(line=line)
-            self._offset = (bin[4]*256 + bin[5]) * 16
+            self._offset = (bin[4] * 256 + bin[5]) * 16
 
         elif record_type == 4:
             # Extended Linear Address Record
             if record_length != 2 or addr != 0:
                 raise ExtendedLinearAddressRecordError(line=line)
-            self._offset = (bin[4]*256 + bin[5]) * 65536
+            self._offset = (bin[4] * 256 + bin[5]) * 65536
 
         elif record_type == 3:
             # Start Segment Address Record
@@ -166,9 +165,9 @@ class IntelHex(object):
                 raise StartSegmentAddressRecordError(line=line)
             if self.start_addr:
                 raise DuplicateStartAddressRecordError(line=line)
-            self.start_addr = {'CS': bin[4]*256 + bin[5],
-                               'IP': bin[6]*256 + bin[7],
-                              }
+            self.start_addr = {'CS': bin[4] * 256 + bin[5],
+                               'IP': bin[6] * 256 + bin[7],
+                               }
 
         elif record_type == 5:
             # Start Linear Address Record
@@ -176,11 +175,11 @@ class IntelHex(object):
                 raise StartLinearAddressRecordError(line=line)
             if self.start_addr:
                 raise DuplicateStartAddressRecordError(line=line)
-            self.start_addr = {'EIP': (bin[4]*16777216 +
-                                       bin[5]*65536 +
-                                       bin[6]*256 +
+            self.start_addr = {'EIP': (bin[4] * 16777216 +
+                                       bin[5] * 65536 +
+                                       bin[6] * 256 +
                                        bin[7]),
-                              }
+                               }
 
     def loadhex(self, fobj):
         """Load hex file into internal buffer. This is not necessary
@@ -245,7 +244,7 @@ class IntelHex(object):
             self.loadbin(fobj)
         else:
             raise ValueError('format should be either "hex" or "bin";'
-                ' got %r instead' % format)
+                             ' got %r instead' % format)
 
     # alias (to be consistent with method tofile)
     fromfile = loadfile
@@ -265,8 +264,8 @@ class IntelHex(object):
         start_addr = s.get('start_addr')
         if start_addr is not None:
             del s['start_addr']
-        for k in s.keys():
-            if type(k) not in (int, long) or k < 0:
+        for k in list(s.keys()):
+            if type(k) not in (int, int) or k < 0:
                 raise ValueError('Source dictionary should have only int keys')
         self._buf.update(s)
         if start_addr is not None:
@@ -285,7 +284,7 @@ class IntelHex(object):
         If this IntelHex object is empty then it's error to
         invoke this method with both start and end as None. 
         """
-        if (start,end) == (None,None) and self._buf == {}:
+        if (start, end) == (None, None) and self._buf == {}:
             raise EmptyIntelHexError
         if size is not None:
             if None not in (start, end):
@@ -299,7 +298,7 @@ class IntelHex(object):
                 start = end - size + 1
                 if start < 0:
                     raise ValueError("tobinarray: invalid size (%d) "
-                                     "for given end address (%d)" % (size,end))
+                                     "for given end address (%d)" % (size, end))
         else:
             if start is None:
                 start = self.minaddr()
@@ -321,12 +320,12 @@ class IntelHex(object):
         @return         array of unsigned char data.
         '''
         if not isinstance(pad, _DeprecatedParam):
-            print "IntelHex.tobinarray: 'pad' parameter is deprecated."
+            print("IntelHex.tobinarray: 'pad' parameter is deprecated.")
             if pad is not None:
-                print "Please, use IntelHex.padding attribute instead."
+                print("Please, use IntelHex.padding attribute instead.")
             else:
-                print "Please, don't pass it explicitly."
-                print "Use syntax like this: ih.tobinarray(start=xxx, end=yyy, size=zzz)"
+                print("Please, don't pass it explicitly.")
+                print("Use syntax like this: ih.tobinarray(start=xxx, end=yyy, size=zzz)")
         else:
             pad = None
         return self._tobinarray_really(start, end, pad, size)
@@ -345,7 +344,7 @@ class IntelHex(object):
 
         start, end = self._get_start_end(start, end, size)
 
-        for i in xrange(start, end+1):
+        for i in range(start, end + 1):
             bin.append(self._buf.get(i, pad))
 
         return bin
@@ -361,12 +360,12 @@ class IntelHex(object):
         @return         string of binary data.
         '''
         if not isinstance(pad, _DeprecatedParam):
-            print "IntelHex.tobinstr: 'pad' parameter is deprecated."
+            print("IntelHex.tobinstr: 'pad' parameter is deprecated.")
             if pad is not None:
-                print "Please, use IntelHex.padding attribute instead."
+                print("Please, use IntelHex.padding attribute instead.")
             else:
-                print "Please, don't pass it explicitly."
-                print "Use syntax like this: ih.tobinstr(start=xxx, end=yyy, size=zzz)"
+                print("Please, don't pass it explicitly.")
+                print("Use syntax like this: ih.tobinstr(start=xxx, end=yyy, size=zzz)")
         else:
             pad = None
         return self._tobinstr_really(start, end, pad, size)
@@ -386,12 +385,12 @@ class IntelHex(object):
         @param  size    size of the block, used with start or end parameter.
         '''
         if not isinstance(pad, _DeprecatedParam):
-            print "IntelHex.tobinfile: 'pad' parameter is deprecated."
+            print("IntelHex.tobinfile: 'pad' parameter is deprecated.")
             if pad is not None:
-                print "Please, use IntelHex.padding attribute instead."
+                print("Please, use IntelHex.padding attribute instead.")
             else:
-                print "Please, don't pass it explicitly."
-                print "Use syntax like this: ih.tobinfile(start=xxx, end=yyy, size=zzz)"
+                print("Please, don't pass it explicitly.")
+                print("Use syntax like this: ih.tobinfile(start=xxx, end=yyy, size=zzz)")
         else:
             pad = None
         if getattr(fobj, "write", None) is None:
@@ -420,7 +419,7 @@ class IntelHex(object):
         '''Returns all used addresses in sorted order.
         @return         list of occupied data addresses in sorted order. 
         '''
-        aa = self._buf.keys()
+        aa = list(self._buf.keys())
         aa.sort()
         return aa
 
@@ -428,7 +427,7 @@ class IntelHex(object):
         '''Get minimal address of HEX content.
         @return         minimal address or None if no data
         '''
-        aa = self._buf.keys()
+        aa = list(self._buf.keys())
         if aa == []:
             return None
         else:
@@ -438,7 +437,7 @@ class IntelHex(object):
         '''Get maximal address of HEX content.
         @return         maximal address or None if no data
         '''
-        aa = self._buf.keys()
+        aa = list(self._buf.keys())
         if aa == []:
             return None
         else:
@@ -451,19 +450,19 @@ class IntelHex(object):
                         if no data found.
         '''
         t = type(addr)
-        if t in (int, long):
+        if t in (int, int):
             if addr < 0:
                 raise TypeError('Address should be >= 0.')
             return self._buf.get(addr, self.padding)
         elif t == slice:
-            addresses = self._buf.keys()
+            addresses = list(self._buf.keys())
             ih = IntelHex()
             if addresses:
                 addresses.sort()
                 start = addr.start or addresses[0]
-                stop = addr.stop or (addresses[-1]+1)
+                stop = addr.stop or (addresses[-1] + 1)
                 step = addr.step or 1
-                for i in xrange(start, stop, step):
+                for i in range(start, stop, step):
                     x = self._buf.get(i)
                     if x is not None:
                         ih[i] = x
@@ -474,7 +473,7 @@ class IntelHex(object):
     def __setitem__(self, addr, byte):
         """Set byte at address."""
         t = type(addr)
-        if t in (int, long):
+        if t in (int, int):
             if addr < 0:
                 raise TypeError('Address should be >= 0.')
             self._buf[addr] = byte
@@ -485,10 +484,10 @@ class IntelHex(object):
             stop = addr.stop
             step = addr.step or 1
             if None not in (start, stop):
-                ra = range(start, stop, step)
+                ra = list(range(start, stop, step))
                 if len(ra) != len(byte):
                     raise ValueError('Length of bytes sequence does not match '
-                        'address range')
+                                     'address range')
             elif (start, stop) == (None, None):
                 raise TypeError('Unsupported address range')
             elif start is None:
@@ -500,7 +499,7 @@ class IntelHex(object):
             if stop < 0:
                 raise TypeError('stop address cannot be negative')
             j = 0
-            for i in xrange(start, stop, step):
+            for i in range(start, stop, step):
                 self._buf[i] = byte[j]
                 j += 1
         else:
@@ -509,18 +508,18 @@ class IntelHex(object):
     def __delitem__(self, addr):
         """Delete byte at address."""
         t = type(addr)
-        if t in (int, long):
+        if t in (int, int):
             if addr < 0:
                 raise TypeError('Address should be >= 0.')
             del self._buf[addr]
         elif t == slice:
-            addresses = self._buf.keys()
+            addresses = list(self._buf.keys())
             if addresses:
                 addresses.sort()
                 start = addr.start or addresses[0]
-                stop = addr.stop or (addresses[-1]+1)
+                stop = addr.stop or (addresses[-1] + 1)
                 step = addr.step or 1
-                for i in xrange(start, stop, step):
+                for i in range(start, stop, step):
                     x = self._buf.get(i)
                     if x is not None:
                         del self._buf[i]
@@ -529,7 +528,7 @@ class IntelHex(object):
 
     def __len__(self):
         """Return count of bytes with real values."""
-        return len(self._buf.keys())
+        return len(list(self._buf.keys()))
 
     def write_hex_file(self, f, write_start_addr=True):
         """Write data to file f in HEX format.
@@ -554,45 +553,43 @@ class IntelHex(object):
         # is faster than hexstr.upper():
         # 0.452ms vs. 0.652ms (translate vs. upper)
         if sys.version_info[0] >= 3:
-            table = bytes(range(256)).upper()
+            table = bytes(list(range(256))).upper()
         else:
-            table = ''.join(chr(i).upper() for  i in range(256))
-
-
+            table = ''.join(chr(i).upper() for i in range(256))
 
         # start address record if any
         if self.start_addr and write_start_addr:
-            keys = self.start_addr.keys()
+            keys = list(self.start_addr.keys())
             keys.sort()
-            bin = array('B', asbytes('\0'*9))
-            if keys == ['CS','IP']:
+            bin = array('B', asbytes('\0' * 9))
+            if keys == ['CS', 'IP']:
                 # Start Segment Address Record
-                bin[0] = 4      # reclen
-                bin[1] = 0      # offset msb
-                bin[2] = 0      # offset lsb
-                bin[3] = 3      # rectyp
+                bin[0] = 4  # reclen
+                bin[1] = 0  # offset msb
+                bin[2] = 0  # offset lsb
+                bin[3] = 3  # rectyp
                 cs = self.start_addr['CS']
                 bin[4] = (cs >> 8) & 0x0FF
                 bin[5] = cs & 0x0FF
                 ip = self.start_addr['IP']
                 bin[6] = (ip >> 8) & 0x0FF
                 bin[7] = ip & 0x0FF
-                bin[8] = (-sum(bin)) & 0x0FF    # chksum
+                bin[8] = (-sum(bin)) & 0x0FF  # chksum
                 fwrite(':' +
                        asstr(hexlify(bin.tostring()).translate(table)) +
                        '\n')
             elif keys == ['EIP']:
                 # Start Linear Address Record
-                bin[0] = 4      # reclen
-                bin[1] = 0      # offset msb
-                bin[2] = 0      # offset lsb
-                bin[3] = 5      # rectyp
+                bin[0] = 4  # reclen
+                bin[1] = 0  # offset msb
+                bin[2] = 0  # offset lsb
+                bin[3] = 5  # rectyp
                 eip = self.start_addr['EIP']
                 bin[4] = (eip >> 24) & 0x0FF
                 bin[5] = (eip >> 16) & 0x0FF
                 bin[6] = (eip >> 8) & 0x0FF
                 bin[7] = eip & 0x0FF
-                bin[8] = (-sum(bin)) & 0x0FF    # chksum
+                bin[8] = (-sum(bin)) & 0x0FF  # chksum
                 fwrite(':' +
                        asstr(hexlify(bin.tostring()).translate(table)) +
                        '\n')
@@ -602,7 +599,7 @@ class IntelHex(object):
                 raise InvalidStartAddressValueError(start_addr=self.start_addr)
 
         # data
-        addresses = self._buf.keys()
+        addresses = list(self._buf.keys())
         addresses.sort()
         addr_len = len(addresses)
         if addr_len:
@@ -620,16 +617,16 @@ class IntelHex(object):
 
             while cur_addr <= maxaddr:
                 if need_offset_record:
-                    bin = array('B', asbytes('\0'*7))
-                    bin[0] = 2      # reclen
-                    bin[1] = 0      # offset msb
-                    bin[2] = 0      # offset lsb
-                    bin[3] = 4      # rectyp
-                    high_ofs = int(cur_addr>>16)
+                    bin = array('B', asbytes('\0' * 7))
+                    bin[0] = 2  # reclen
+                    bin[1] = 0  # offset msb
+                    bin[2] = 0  # offset lsb
+                    bin[3] = 4  # rectyp
+                    high_ofs = int(cur_addr >> 16)
                     b = divmod(high_ofs, 256)
-                    bin[4] = b[0]   # msb of high_ofs
-                    bin[5] = b[1]   # lsb of high_ofs
-                    bin[6] = (-sum(bin)) & 0x0FF    # chksum
+                    bin[4] = b[0]  # msb of high_ofs
+                    bin[5] = b[1]  # lsb of high_ofs
+                    bin[6] = (-sum(bin)) & 0x0FF  # chksum
                     fwrite(':' +
                            asstr(hexlify(bin.tostring()).translate(table)) +
                            '\n')
@@ -638,36 +635,36 @@ class IntelHex(object):
                     # produce one record
                     low_addr = cur_addr & 0x0FFFF
                     # chain_len off by 1
-                    chain_len = min(15, 65535-low_addr, maxaddr-cur_addr)
+                    chain_len = min(15, 65535 - low_addr, maxaddr - cur_addr)
 
                     # search continuous chain
                     stop_addr = cur_addr + chain_len
                     if chain_len:
                         ix = bisect_right(addresses, stop_addr,
                                           cur_ix,
-                                          min(cur_ix+chain_len+1, addr_len))
-                        chain_len = ix - cur_ix     # real chain_len
+                                          min(cur_ix + chain_len + 1, addr_len))
+                        chain_len = ix - cur_ix  # real chain_len
                         # there could be small holes in the chain
                         # but we will catch them by try-except later
                         # so for big continuous files we will work
                         # at maximum possible speed
                     else:
-                        chain_len = 1               # real chain_len
+                        chain_len = 1  # real chain_len
 
-                    bin = array('B', asbytes('\0'*(5+chain_len)))
+                    bin = array('B', asbytes('\0' * (5 + chain_len)))
                     b = divmod(low_addr, 256)
-                    bin[1] = b[0]   # msb of low_addr
-                    bin[2] = b[1]   # lsb of low_addr
-                    bin[3] = 0          # rectype
-                    try:    # if there is small holes we'll catch them
+                    bin[1] = b[0]  # msb of low_addr
+                    bin[2] = b[1]  # lsb of low_addr
+                    bin[3] = 0  # rectype
+                    try:  # if there is small holes we'll catch them
                         for i in range(chain_len):
-                            bin[4+i] = self._buf[cur_addr+i]
+                            bin[4 + i] = self._buf[cur_addr + i]
                     except KeyError:
                         # we catch a hole so we should shrink the chain
                         chain_len = i
-                        bin = bin[:5+i]
+                        bin = bin[:5 + i]
                     bin[0] = chain_len
-                    bin[4+chain_len] = (-sum(bin)) & 0x0FF    # chksum
+                    bin[4 + chain_len] = (-sum(bin)) & 0x0FF  # chksum
                     fwrite(':' +
                            asstr(hexlify(bin.tostring()).translate(table)) +
                            '\n')
@@ -679,7 +676,7 @@ class IntelHex(object):
                     else:
                         cur_addr = maxaddr + 1
                         break
-                    high_addr = int(cur_addr>>16)
+                    high_addr = int(cur_addr >> 16)
                     if high_addr > high_ofs:
                         break
 
@@ -700,16 +697,16 @@ class IntelHex(object):
             self.tobinfile(fobj)
         else:
             raise ValueError('format should be either "hex" or "bin";'
-                ' got %r instead' % format)
+                             ' got %r instead' % format)
 
     def gets(self, addr, length):
         """Get string of bytes from given address. If any entries are blank
         from addr through addr+length, a NotEnoughDataError exception will
         be raised. Padding is not used."""
-        a = array('B', asbytes('\0'*length))
+        a = array('B', asbytes('\0' * length))
         try:
-            for i in xrange(length):
-                a[i] = self._buf[addr+i]
+            for i in range(length):
+                a[i] = self._buf[addr + i]
         except KeyError:
             raise NotEnoughDataError(address=addr, length=length)
         return asstr(a.tostring())
@@ -719,8 +716,8 @@ class IntelHex(object):
         entries.
         """
         a = array('B', asbytes(s))
-        for i in xrange(len(a)):
-            self._buf[addr+i] = a[i]
+        for i in range(len(a)):
+            self._buf[addr + i] = a[i]
 
     def getsz(self, addr):
         """Get zero-terminated string from given address. Will raise 
@@ -729,18 +726,18 @@ class IntelHex(object):
         i = 0
         try:
             while True:
-                if self._buf[addr+i] == 0:
+                if self._buf[addr + i] == 0:
                     break
                 i += 1
         except KeyError:
             raise NotEnoughDataError(msg=('Bad access at 0x%X: '
-                'not enough data to read zero-terminated string') % addr)
+                                          'not enough data to read zero-terminated string') % addr)
         return self.gets(addr, i)
 
     def putsz(self, addr, s):
         """Put string in object at addr and append terminating zero at end."""
         self.puts(addr, s)
-        self._buf[addr+len(s)] = 0
+        self._buf[addr + len(s)] = 0
 
     def dump(self, tofile=None):
         """Dump object content to specified file object or to stdout if None.
@@ -762,27 +759,27 @@ class IntelHex(object):
             elif eip is None and cs is not None and ip is not None:
                 tofile.write('CS = 0x%04X, IP = 0x%04X\n' % (cs, ip))
             else:
-                tofile.write('start_addr = %r\n' % start_addr)
+                tofile.write('start_addr = %r\n' % self.start_addr)
         # actual data
-        addresses = self._buf.keys()
+        addresses = list(self._buf.keys())
         if addresses:
             addresses.sort()
             minaddr = addresses[0]
             maxaddr = addresses[-1]
-            startaddr = int(minaddr>>4)*16
-            endaddr = int((maxaddr>>4)+1)*16
+            startaddr = int(minaddr >> 4) * 16
+            endaddr = int((maxaddr >> 4) + 1) * 16
             maxdigits = max(len(str(endaddr)), 4)
             templa = '%%0%dX' % maxdigits
-            range16 = range(16)
-            for i in xrange(startaddr, endaddr, 16):
+            range16 = list(range(16))
+            for i in range(startaddr, endaddr, 16):
                 tofile.write(templa % i)
                 tofile.write(' ')
                 s = []
                 for j in range16:
-                    x = self._buf.get(i+j)
+                    x = self._buf.get(i + j)
                     if x is not None:
                         tofile.write(' %02X' % x)
-                        if 32 <= x < 127:   # GNU less does not like 0x7F (128 decimal) so we'd better show it as dot
+                        if 32 <= x < 127:  # GNU less does not like 0x7F (128 decimal) so we'd better show it as dot
                             s.append(chr(x))
                         else:
                             s.append('.')
@@ -814,7 +811,7 @@ class IntelHex(object):
             raise ValueError("Can't merge itself")
         if overlap not in ('error', 'ignore', 'replace'):
             raise ValueError("overlap argument should be either "
-                "'error', 'ignore' or 'replace'")
+                             "'error', 'ignore' or 'replace'")
         # merge data
         this_buf = self._buf
         other_buf = other._buf
@@ -828,17 +825,19 @@ class IntelHex(object):
             this_buf[i] = other_buf[i]
         # merge start_addr
         if self.start_addr != other.start_addr:
-            if self.start_addr is None:     # set start addr from other
+            if self.start_addr is None:  # set start addr from other
                 self.start_addr = other.start_addr
             elif other.start_addr is None:  # keep existing start addr
                 pass
-            else:                           # conflict
+            else:  # conflict
                 if overlap == 'error':
                     raise AddressOverlapError(
                         'Starting addresses are different')
                 elif overlap == 'replace':
                     self.start_addr = other.start_addr
-#/IntelHex
+
+
+# /IntelHex
 
 
 class IntelHex16bit(IntelHex):
@@ -887,7 +886,7 @@ class IntelHex16bit(IntelHex):
         byte2 = self._buf.get(addr2, None)
 
         if byte1 != None and byte2 != None:
-            return byte1 | (byte2 << 8)     # low endian
+            return byte1 | (byte2 << 8)  # low endian
 
         if byte1 == None and byte2 == None:
             return self.padding
@@ -900,29 +899,29 @@ class IntelHex16bit(IntelHex):
         addr_byte = addr16 * 2
         b = divmod(word, 256)
         self._buf[addr_byte] = b[1]
-        self._buf[addr_byte+1] = b[0]
+        self._buf[addr_byte + 1] = b[0]
 
     def minaddr(self):
         '''Get minimal address of HEX content in 16-bit mode.
 
         @return         minimal address used in this object
         '''
-        aa = self._buf.keys()
+        aa = list(self._buf.keys())
         if aa == []:
             return 0
         else:
-            return min(aa)>>1
+            return min(aa) >> 1
 
     def maxaddr(self):
         '''Get maximal address of HEX content in 16-bit mode.
 
         @return         maximal address used in this object 
         '''
-        aa = self._buf.keys()
+        aa = list(self._buf.keys())
         if aa == []:
             return 0
         else:
-            return max(aa)>>1
+            return max(aa) >> 1
 
     def tobinarray(self, start=None, end=None, size=None):
         '''Convert this object to binary form as array (of 2-bytes word data).
@@ -943,13 +942,13 @@ class IntelHex16bit(IntelHex):
 
         start, end = self._get_start_end(start, end, size)
 
-        for addr in xrange(start, end+1):
+        for addr in range(start, end + 1):
             bin.append(self[addr])
 
         return bin
 
 
-#/class IntelHex16bit
+# /class IntelHex16bit
 
 
 def hex2bin(fin, fout, start=None, end=None, size=None, pad=None):
@@ -965,7 +964,7 @@ def hex2bin(fin, fout, start=None, end=None, size=None, pad=None):
     """
     try:
         h = IntelHex(fin)
-    except HexReaderError, e:
+    except HexReaderError as e:
         txt = "ERROR: bad HEX file: %s" % str(e)
         print(txt)
         return 1
@@ -977,7 +976,7 @@ def hex2bin(fin, fout, start=None, end=None, size=None, pad=None):
                 start = h.minaddr()
             end = start + size - 1
         else:
-            if (end+1) >= size:
+            if (end + 1) >= size:
                 start = end + 1 - size
             else:
                 start = 0
@@ -987,13 +986,15 @@ def hex2bin(fin, fout, start=None, end=None, size=None, pad=None):
             # using .padding attribute rather than pad argument to function call
             h.padding = pad
         h.tobinfile(fout, start, end)
-    except IOError, e:
+    except IOError as e:
         txt = "ERROR: Could not write to file: %s: %s" % (fout, str(e))
         print(txt)
         return 1
 
     return 0
-#/def hex2bin
+
+
+# /def hex2bin
 
 
 def bin2hex(fin, fout, offset=0):
@@ -1007,20 +1008,22 @@ def bin2hex(fin, fout, offset=0):
     h = IntelHex()
     try:
         h.loadbin(fin, offset)
-    except IOError, e:
+    except IOError as e:
         txt = 'ERROR: unable to load bin file:', str(e)
         print(txt)
         return 1
 
     try:
         h.tofile(fout, format='hex')
-    except IOError, e:
+    except IOError as e:
         txt = "ERROR: Could not write to file: %s: %s" % (fout, str(e))
         print(txt)
         return 1
 
     return 0
-#/def bin2hex
+
+
+# /def bin2hex
 
 
 def diff_dumps(ih1, ih2, tofile=None, name1="a", name2="b", n_context=3):
@@ -1034,20 +1037,22 @@ def diff_dumps(ih1, ih2, tofile=None, name1="a", name2="b", n_context=3):
     @param name2      name of the first hex file to show in the diff header
     @param n_context  number of context lines in the unidiff output
     """
+
     def prepare_lines(ih):
-        from cStringIO import StringIO
+        from io import StringIO
         sio = StringIO()
         ih.dump(sio)
         dump = sio.getvalue()
         lines = dump.splitlines()
         return lines
+
     a = prepare_lines(ih1)
     b = prepare_lines(ih2)
     import difflib
     result = list(difflib.unified_diff(a, b, fromfile=name1, tofile=name2, n=n_context, lineterm=''))
     if tofile is None:
         tofile = sys.stdout
-    output = '\n'.join(result)+'\n'
+    output = '\n'.join(result) + '\n'
     tofile.write(output)
 
 
@@ -1067,6 +1072,7 @@ class Record(object):
         s = (-sum(bytes)) & 0x0FF
         bin = array('B', bytes + [s])
         return ':' + asstr(hexlify(bin.tostring())).upper()
+
     _from_bytes = staticmethod(_from_bytes)
 
     def data(offset, bytes):
@@ -1081,8 +1087,9 @@ class Record(object):
         """
         assert 0 <= offset < 65536
         assert 0 < len(bytes) < 256
-        b = [len(bytes), (offset>>8)&0x0FF, offset&0x0FF, 0x00] + bytes
+        b = [len(bytes), (offset >> 8) & 0x0FF, offset & 0x0FF, 0x00] + bytes
         return Record._from_bytes(b)
+
     data = staticmethod(data)
 
     def eof():
@@ -1090,6 +1097,7 @@ class Record(object):
         @return         String representation of Intel Hex EOF record 
         """
         return ':00000001FF'
+
     eof = staticmethod(eof)
 
     def extended_segment_address(usba):
@@ -1098,8 +1106,9 @@ class Record(object):
 
         @return         String representation of Intel Hex USBA record.
         """
-        b = [2, 0, 0, 0x02, (usba>>8)&0x0FF, usba&0x0FF]
+        b = [2, 0, 0, 0x02, (usba >> 8) & 0x0FF, usba & 0x0FF]
         return Record._from_bytes(b)
+
     extended_segment_address = staticmethod(extended_segment_address)
 
     def start_segment_address(cs, ip):
@@ -1109,9 +1118,10 @@ class Record(object):
 
         @return         String representation of Intel Hex SSA record.
         """
-        b = [4, 0, 0, 0x03, (cs>>8)&0x0FF, cs&0x0FF,
-             (ip>>8)&0x0FF, ip&0x0FF]
+        b = [4, 0, 0, 0x03, (cs >> 8) & 0x0FF, cs & 0x0FF,
+             (ip >> 8) & 0x0FF, ip & 0x0FF]
         return Record._from_bytes(b)
+
     start_segment_address = staticmethod(start_segment_address)
 
     def extended_linear_address(ulba):
@@ -1120,8 +1130,9 @@ class Record(object):
 
         @return         String representation of Intel Hex ELA record.
         """
-        b = [2, 0, 0, 0x04, (ulba>>8)&0x0FF, ulba&0x0FF]
+        b = [2, 0, 0, 0x04, (ulba >> 8) & 0x0FF, ulba & 0x0FF]
         return Record._from_bytes(b)
+
     extended_linear_address = staticmethod(extended_linear_address)
 
     def start_linear_address(eip):
@@ -1130,15 +1141,17 @@ class Record(object):
 
         @return         String representation of Intel Hex SLA record.
         """
-        b = [4, 0, 0, 0x05, (eip>>24)&0x0FF, (eip>>16)&0x0FF,
-             (eip>>8)&0x0FF, eip&0x0FF]
+        b = [4, 0, 0, 0x05, (eip >> 24) & 0x0FF, (eip >> 16) & 0x0FF,
+             (eip >> 8) & 0x0FF, eip & 0x0FF]
         return Record._from_bytes(b)
+
     start_linear_address = staticmethod(start_linear_address)
 
 
 class _BadFileNotation(Exception):
     """Special error class to use with _get_file_and_addr_range."""
     pass
+
 
 def _get_file_and_addr_range(s, _support_drive_letter=None):
     """Special method for hexmerge.py script to split file notation
@@ -1150,7 +1163,7 @@ def _get_file_and_addr_range(s, _support_drive_letter=None):
         _support_drive_letter = (os.name == 'nt')
     drive = ''
     if _support_drive_letter:
-        if s[1:2] == ':' and s[0].upper() in ''.join([chr(i) for i in range(ord('A'), ord('Z')+1)]):
+        if s[1:2] == ':' and s[0].upper() in ''.join([chr(i) for i in range(ord('A'), ord('Z') + 1)]):
             drive = s[:2]
             s = s[2:]
     parts = s.split(':')
@@ -1163,6 +1176,7 @@ def _get_file_and_addr_range(s, _support_drive_letter=None):
         raise _BadFileNotation
     else:
         fname = parts[0]
+
         def ascii_hex_to_int(ascii):
             if ascii is not None:
                 try:
@@ -1170,9 +1184,10 @@ def _get_file_and_addr_range(s, _support_drive_letter=None):
                 except ValueError:
                     raise _BadFileNotation
             return ascii
+
         fstart = ascii_hex_to_int(parts[1] or None)
         fend = ascii_hex_to_int(parts[2] or None)
-    return drive+fname, fstart, fend
+    return drive + fname, fstart, fend
 
 
 ##
@@ -1202,13 +1217,13 @@ def _get_file_and_addr_range(s, _support_drive_letter=None):
 class IntelHexError(Exception):
     '''Base Exception class for IntelHex module'''
 
-    _fmt = 'IntelHex base error'   #: format string
+    _fmt = 'IntelHex base error'  #: format string
 
     def __init__(self, msg=None, **kw):
         """Initialize the Exception with the given message.
         """
         self.msg = msg
-        for key, value in kw.items():
+        for key, value in list(kw.items()):
             setattr(self, key, value)
 
     def __str__(self):
@@ -1217,19 +1232,23 @@ class IntelHexError(Exception):
             return self.msg
         try:
             return self._fmt % self.__dict__
-        except (NameError, ValueError, KeyError), e:
+        except (NameError, ValueError, KeyError) as e:
             return 'Unprintable exception %s: %s' \
-                % (repr(e), str(e))
+                   % (repr(e), str(e))
+
 
 class _EndOfFile(IntelHexError):
     """Used for internal needs only."""
     _fmt = 'EOF record reached -- signal to stop read file'
 
+
 class HexReaderError(IntelHexError):
     _fmt = 'Hex reader base error'
 
+
 class AddressOverlapError(HexReaderError):
     _fmt = 'Hex file has data overlap at address 0x%(address)X on line %(line)d'
+
 
 # class NotAHexFileError was removed in trunk.revno.54 because it's not used
 
@@ -1241,11 +1260,14 @@ class HexRecordError(HexReaderError):
 class RecordLengthError(HexRecordError):
     _fmt = 'Record at line %(line)d has invalid length'
 
+
 class RecordTypeError(HexRecordError):
     _fmt = 'Record at line %(line)d has invalid record type'
 
+
 class RecordChecksumError(HexRecordError):
     _fmt = 'Record at line %(line)d has invalid checksum'
+
 
 class EOFRecordError(HexRecordError):
     _fmt = 'File has invalid End-of-File record'
@@ -1254,8 +1276,10 @@ class EOFRecordError(HexRecordError):
 class ExtendedAddressRecordError(HexRecordError):
     _fmt = 'Base class for extended address exceptions'
 
+
 class ExtendedSegmentAddressRecordError(ExtendedAddressRecordError):
     _fmt = 'Invalid Extended Segment Address Record at line %(line)d'
+
 
 class ExtendedLinearAddressRecordError(ExtendedAddressRecordError):
     _fmt = 'Invalid Extended Linear Address Record at line %(line)d'
@@ -1264,14 +1288,18 @@ class ExtendedLinearAddressRecordError(ExtendedAddressRecordError):
 class StartAddressRecordError(HexRecordError):
     _fmt = 'Base class for start address exceptions'
 
+
 class StartSegmentAddressRecordError(StartAddressRecordError):
     _fmt = 'Invalid Start Segment Address Record at line %(line)d'
+
 
 class StartLinearAddressRecordError(StartAddressRecordError):
     _fmt = 'Invalid Start Linear Address Record at line %(line)d'
 
+
 class DuplicateStartAddressRecordError(StartAddressRecordError):
     _fmt = 'Start Address Record appears twice at line %(line)d'
+
 
 class InvalidStartAddressValueError(StartAddressRecordError):
     _fmt = 'Invalid start address value: %(start_addr)s'
@@ -1281,8 +1309,10 @@ class NotEnoughDataError(IntelHexError):
     _fmt = ('Bad access at 0x%(address)X: '
             'not enough data to read %(length)d contiguous bytes')
 
+
 class BadAccess16bit(NotEnoughDataError):
     _fmt = 'Bad access at 0x%(address)X: not enough data to read 16 bit value'
+
 
 class EmptyIntelHexError(IntelHexError):
     _fmt = "Requested operation cannot be executed with empty object"
