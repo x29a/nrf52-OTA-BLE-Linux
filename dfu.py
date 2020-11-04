@@ -15,9 +15,6 @@ from bluepy.btle import *
 from intelhex import IntelHex
 from array    import array
 from unpacker import Unpacker
-from PyQt4 import QtCore
-from PyQt4.QtCore import pyqtSignal
-import gui
 
 VERBOSE=1
 
@@ -140,7 +137,7 @@ class MyDelegate(DefaultDelegate):
  Define the BleDfuServer class
 ------------------------------------------------------------------------------
 """
-class BleDfuServer(QtCore.QObject):
+class BleDfuServer():
     """
     #--------------------------------------------------------------------------
     # Adjust these handle values to your peripheral device requirements.
@@ -162,9 +159,6 @@ class BleDfuServer(QtCore.QObject):
     notification = None
     delegate = None
     target_mac = None
-    
-    #signal needed to forward the value to be updated on the progress bar
-    updated = pyqtSignal(int)
     """
     --------------------------------------------------------------------------
     
