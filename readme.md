@@ -29,3 +29,21 @@ Launch the program with the following command:
 - Select a file to be uploaded by pressing the "Select File" button. The file can be a .bin (or .hex) together with .dat, a .zip (containing the bin and dat files), just an .hex file or just a .bin file (nrfutil will be used to generate the .dat file in the latest cases).
 - Scan the BLE devices (the blank field below the scan button will be filled with the found devices).
 - Select a device from the list: ota programming will start immediately.
+
+## DFU only usage
+
+In order to only use the dfu.py file to flash a firmware via OTA, use:
+
+`python2 dfu.py -a YOURMAC -z YOURFIRMWARE.zip`
+
+## Docker container
+
+There is a Dockerfile which sets up an environment (no GUI) to flash OTA via DFU.
+
+To build the image use e.g.
+
+`docker build -t nrf52py2 .`
+
+To run the image use e.g.
+
+`docker run --rm -it --privileged --net=host -v /local/path/to/app_dfu_package.zip:/app/app_dfu_package.zip nrf52py2 -a YOURMAC -z /app/app_dfu_package.zip`
