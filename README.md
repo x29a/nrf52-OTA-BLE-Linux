@@ -46,4 +46,4 @@ To build the image use e.g.
 
 To run the image use e.g.
 
-`docker run --rm -it --privileged --net=host -v /local/path/to/app_dfu_package.zip:/app/app_dfu_package.zip nrf52py2 -a YOURMAC -z /app/app_dfu_package.zip`
+`docker run --rm -it --device=/dev/bus --net=host -v /local/path/to/app_dfu_package.zip:/app/app_dfu_package.zip nrf52py2 -a YOURMAC -z /app/app_dfu_package.zip`
