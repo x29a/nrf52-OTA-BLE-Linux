@@ -164,12 +164,13 @@ class BleDfuServer():
     
     --------------------------------------------------------------------------
     """
-    def __init__(self, target_mac, hexfile_path, datfile_path):
+    def __init__(self, target_mac, hexfile_path, datfile_path, host_iface):
 		debug_msg("Init")
 		self.target_mac = target_mac
 
 		self.hexfile_path = hexfile_path
 		self.datfile_path = datfile_path
+		self.host_iface = host_iface
 		self.delegate = MyDelegate(self)
 #		self.instance = window
 #		self.updated.connect(self.instance.updateProgressBar)
@@ -185,7 +186,7 @@ class BleDfuServer():
     def scan_and_connect(self):
 		debug_msg("scan_and_connect")
 
-		self.ble_conn = Peripheral(self.target_mac, "random")
+		self.ble_conn = Peripheral(self.target_mac, "random", self.host_iface)
 		self.ble_conn.setDelegate(self.delegate)
 		debug_msg("connected!")
 
@@ -778,6 +779,14 @@ def main():
                   help='zip file to be used.'
                   )
 
+        parser.add_option('-i', '--iface',
+                  action='store',
+                  dest="iface",
+                  type="string",
+                  default=0,
+                  help='host bluetooth interface.'
+                  )
+
         options, args = parser.parse_args()
 
     except Exception, e:
@@ -829,7 +838,7 @@ def main():
             datfile = options.datfile
 
         ''' Start of Device Firmware Update processing '''
-        ble_dfu = BleDfuServer(options.address.upper(), hexfile, datfile)
+        ble_dfu = BleDfuServer(options.address.upper(), hexfile, datfile, options.iface)
 
         # Initialize inputs
         ble_dfu.input_setup()
