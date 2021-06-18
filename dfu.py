@@ -7,6 +7,7 @@
 """
 import binascii
 import logging
+import logging.config
 import os
 import sys
 import optparse
@@ -19,7 +20,25 @@ from array import array
 from unpacker import Unpacker
 
 LOG = logging.getLogger(__name__)
-
+LOG_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'local': {
+            'format': '%(asctime)s %(message)s',
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'local',
+        }
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console'],
+       }
+}
 
 # DFU Opcodes
 START_DFU = 1
@@ -100,9 +119,7 @@ def convert_array_to_hex_string(arr):
             )
         hex_str += "%02x" % val
 
-    value = binascii.a2b_hex(hex_str)
-    value = str(value)
-    return value
+    return binascii.a2b_hex(hex_str)
 
 
 class MyDelegate(bluepy.btle.DefaultDelegate):
@@ -114,7 +131,7 @@ class MyDelegate(bluepy.btle.DefaultDelegate):
 
     def handleNotification(self, c_handle, data):
         if self.instance is not None:
-            method = getattr(self.instance, "setNotification")
+            method = getattr(self.instance, "set_notification")
             method(data)
 
 
@@ -152,6 +169,7 @@ class BleDfuServer:
     def scan_and_connect(self):
         """Connect to peripheral device."""
         LOG.info("scan_and_connect")
+
         self.ble_connection = bluepy.btle.Peripheral(self.target_mac, "random")
         self.ble_connection.setDelegate(self.delegate)
         LOG.info("connected!")
@@ -165,8 +183,6 @@ class BleDfuServer:
         """Wait for notification to arrive.
         Example format: "Notification handle = 0x0019 value: 10 01 01"""
         while True:
-            # print "dfu_wait_for_notify"
-
             if not self.ble_connection.isalive():
                 LOG.info("connection not alive")
                 return None
@@ -211,19 +227,19 @@ class BleDfuServer:
         if len(notify) < 3:
             LOG.info("notify data length error")
             return
-
-        dfu_oper = hex(ord(notify[0]))[2:]
+        dfu_oper = hex(notify[0])
+        dfu_oper = str(dfu_oper[2:])
         oper_str = DFU_OPERATION[dfu_oper]
         LOG.info(f"_dfu_parse_notify: {notify} dfu_oper: {dfu_oper}")
         if oper_str == "RESPONSE":
-            proc = hex(ord(notify[1]))
+            proc = hex(notify[1])
             proc = str(proc[2:])
             if len(proc) == 1:
                 dfu_process = "0" + proc
             else:
                 dfu_process = proc
 
-            stat = hex(ord(notify[2]))
+            stat = hex(notify[2])
             stat = str(stat[2:])
             if len(stat) == 1:
                 dfu_status = "0" + stat
@@ -242,10 +258,10 @@ class BleDfuServer:
                 return "FAIL"
 
         if oper_str == "PKT_RCPT_NOTIF":
-            byte1 = ord(notify[4])
-            byte2 = ord(notify[3])
-            byte3 = ord(notify[2])
-            byte4 = ord(notify[1])
+            byte1 = notify[4]
+            byte2 = notify[3]
+            byte3 = notify[2]
+            byte4 = notify[1]
 
             receipt = 0
             receipt = receipt + (byte1 << 24)
@@ -262,14 +278,16 @@ class BleDfuServer:
             opcode = hex(opcode)
         except Exception:
             pass
-        LOG.info(f"char-write-req 0x{self.ctrlpt_handle}4x {opcode}")
+        LOG.info('char-write-req 0x%04x %s' % (self.ctrlpt_handle, opcode))
         if len(opcode) == 5:
             send_opcode = opcode[0:2] + "0" + opcode[2:]
         else:
             send_opcode = opcode
+
+        value = str(chr(int(send_opcode[2:4], 16))) + str(chr(int(send_opcode[4:6], 16)))
         self.ble_connection.writeCharacteristic(
             self.ctrlpt_handle,
-            str(chr(int(send_opcode[2:4], 16))) + str(chr(int(send_opcode[4:6], 16))),
+            value.encode('utf-8'),
             True,
         )
 
@@ -280,16 +298,16 @@ class BleDfuServer:
         except Exception:
             pass
         self.ble_connection.writeCharacteristic(
-            self.ctrlpt_handle, str(chr(int(opcode[2:4], 16))), True
+            self.ctrlpt_handle, chr(int(opcode[2:4], 16)).encode('utf-8'), True
         )
 
     def _dfu_pkt_rcpt_notif_req(self):
         """Send 3 bytes: PKT_RCPT_NOTIF_REQ with interval of 10 (0x0a)"""
         opcode = 0x080000
         opcode = opcode + (self.pkt_receipt_interval << 8)  # FIXME: opcode never used anymore
-
+        value = chr(0x08) + chr(0x0a) + chr(0x00)
         self.ble_connection.writeCharacteristic(
-            self.ctrlpt_handle, str(chr(0x08)) + str(chr(0x0A)) + str(chr(0x00)), True
+            self.ctrlpt_handle, value.encode('utf-8'), True
         )
 
     def _dfu_data_send_req(self, data_arr):
@@ -300,7 +318,7 @@ class BleDfuServer:
     def _dfu_data_send_cmd(self, data_arr):
         """Send an array of bytes: command mode"""
         hex_str = convert_array_to_hex_string(data_arr)
-        self.ble_connection.writeCharacteristic(self.data_handle, hex_str, True)
+        self.ble_connection.writeCharacteristic(self.data_handle, hex_str, False)
 
     def _dfu_enable_cccd(self, dfu_mode):
         """Enable DFU Control Point CCCD (Notifications)"""
@@ -446,7 +464,7 @@ class BleDfuServer:
 
         # TODO handle softdevice and bootloader upgrade
         # Reset the board in DFU mode. After reset the board will be disconnected
-        LOG.info(str("char-write-req 0x%02x 0104" % (self.reset_handle)))
+        LOG.info(str("char-write-req 0x%02x 0104" % self.reset_handle))
         # char-write-req 0x0013 0104
         self.ble_connection.writeCharacteristic(
             self.reset_handle, str(chr(0x01)) + str(chr(0x04)), True
@@ -521,7 +539,6 @@ class BleDfuServer:
 
         segment_count = 1
         for i in range(0, self.hex_size, self.pkt_payload_size):
-
             segment = self.bin_array[i: i + self.pkt_payload_size]
             self._dfu_data_send_cmd(segment)
 
@@ -552,10 +569,10 @@ class BleDfuServer:
         )[0]
         if dfu_version_characteristic is not None:
             version = dfu_version_characteristic.read()
-            if ord(str(version[0])) == 8:
+            if int(version[0]) == 8:
                 res = True
                 LOG.info("Board already in DFU mode")
-            elif ord(str(version[0])) == 1:
+            elif int(version[0]) == 1:
                 LOG.info("Board needs to switch in DFU mode")
         return res
 
@@ -591,6 +608,7 @@ def get_handle(ble_connection, uuid):
 
 
 def main():
+    logging.config.dictConfig(LOG_CONFIG)
     LOG.info("DFU Server start")
     sys.dont_write_bytecode = True
     try:
